@@ -1,0 +1,546 @@
+<html><head><base href="https://websim.ai/advanced-pdf-magic-ocr-tool/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced PDF Magic OCR Tool</title>
+<style>
+  :root {
+    --bg-color: #f4f4f4;
+    --text-color: #333;
+    --highlight-color: #ffff00;
+    --button-color: #3498db;
+    --button-hover: #2980b9;
+    --container-bg: #fff;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg-color);
+    display: flex;
+    transition: all 0.3s ease;
+  }
+  .dark-mode {
+    --bg-color: #1a1a1a;
+    --text-color: #f4f4f4;
+    --highlight-color: #ffd700;
+    --button-color: #2ecc71;
+    --button-hover: #27ae60;
+    --container-bg: #2c3e50;
+  }
+  h1, h2 {
+    color: var(--text-color);
+  }
+  .tool-section {
+    background-color: var(--container-bg);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .highlight {
+    background-color: var(--highlight-color);
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+  .button {
+    background-color: var(--button-color);
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  .button:hover {
+    background-color: var(--button-hover);
+  }
+  #pdf-container {
+    width: 50%;
+    height: 100vh;
+    overflow-y: auto;
+    padding-right: 20px;
+  }
+  #tools-container {
+    width: 50%;
+    height: 100vh;
+    overflow-y: auto;
+    padding-left: 20px;
+  }
+  #pdf-viewer {
+    width: 100%;
+    height: calc(100vh - 40px);
+    border: 1px solid #ddd;
+  }
+  .extracted-item {
+    background-color: var(--container-bg);
+    border: 1px solid var(--text-color);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+  }
+  #dark-mode-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+  }
+  .word-count {
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    table-layout: fixed;
+  }
+  th, td {
+    border: 1px solid var(--text-color);
+    padding: 8px;
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  th {
+    background-color: var(--button-color);
+    color: white;
+  }
+  a {
+    color: var(--button-color);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  a:hover {
+    color: var(--button-hover);
+    text-decoration: underline;
+  }
+  .link-popup {
+    position: absolute;
+    background-color: var(--container-bg);
+    border: 1px solid var(--text-color);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 300px;
+    word-wrap: break-word;
+  }
+</style>
+</head>
+<body>
+  <button id="dark-mode-toggle" class="button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  
+  <div id="pdf-container">
+    <h2>PDF/CSV Viewer</h2>
+    <div id="pdf-viewer"></div>
+  </div>
+
+  <div id="tools-container">
+    <h1>Advanced PDF/CSV Magic OCR Tool</h1>
+    
+    <div class="tool-section">
+      <h2>Upload Your File</h2>
+      <input type="file" id="file-upload" accept=".pdf,.csv">
+      <button class="button" onclick="processFile()">Process File</button>
+    </div>
+
+    <div class="tool-section">
+      <h2>Word Extraction and Context</h2>
+      <input type="text" id="search-term" placeholder="Enter word to search">
+      <label for="context-sentences">Number of sentences for context:</label>
+      <input type="number" id="context-sentences" min="1" max="5" value="2">
+      <button class="button" onclick="extractWords()">Extract Words</button>
+      <div id="extracted-words"></div>
+    </div>
+
+    <div class="tool-section">
+      <h2>Highlighting and Annotations</h2>
+      <input type="text" id="highlight-term" placeholder="Enter term to highlight">
+      <button class="button" onclick="highlightTerms()">Highlight</button>
+      <div id="highlight-list"></div>
+    </div>
+
+    <div class="tool-section">
+      <h2>Table Search</h2>
+      <input type="text" id="table-search-term" placeholder="Enter search term">
+      <button class="button" onclick="searchTable()">Search Table</button>
+      <div id="table-result"></div>
+    </div>
+
+    <div class="tool-section">
+      <h2>Export and Analysis</h2>
+      <button class="button" onclick="exportFile()">Export Annotated File</button>
+      <button class="button" onclick="generateReport()">Generate Analysis Report</button>
+    </div>
+
+    <div class="tool-section">
+      <h2>Advanced Options</h2>
+      <label for="grid-toggle">Toggle Invisible Grid:</label>
+      <input type="checkbox" id="grid-toggle" onchange="toggleGrid()">
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script>
+    let fileDocument = null;
+    let fileText = '';
+    let fileDates = [];
+    let fileTables = [];
+    let isCSV = false;
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+
+    function processFile() {
+      const fileInput = document.getElementById('file-upload');
+      const file = fileInput.files[0];
+      if (file) {
+        isCSV = file.name.toLowerCase().endsWith('.csv');
+        if (isCSV) {
+          processCSV(file);
+        } else {
+          processPDF(file);
+        }
+      }
+    }
+
+    function processPDF(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const typedarray = new Uint8Array(e.target.result);
+        pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+          fileDocument = pdf;
+          renderPDF(pdf);
+          extractFullText(pdf);
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function processCSV(file) {
+      Papa.parse(file, {
+        complete: function(results) {
+          fileDocument = results.data;
+          renderCSV(results.data);
+          extractCSVText(results.data);
+        }
+      });
+    }
+
+    function renderPDF(pdf) {
+      const viewer = document.getElementById('pdf-viewer');
+      viewer.innerHTML = '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        pdf.getPage(pageNum).then(function(page) {
+          const scale = 1.5;
+          const viewport = page.getViewport({ scale: scale });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+          page.render(renderContext).then(() => {
+            performLayoutAnalysis(canvas).then(layoutData => {
+              // Handle layout data if needed
+            });
+          });
+          viewer.appendChild(canvas);
+        });
+      }
+      handleLinkHover();
+    }
+
+    function renderCSV(data) {
+      const viewer = document.getElementById('pdf-viewer');
+      viewer.innerHTML = '';
+      const table = document.createElement('table');
+      data.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        row.forEach(cell => {
+          const td = document.createElement(index === 0 ? 'th' : 'td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      viewer.appendChild(table);
+      handleLinkHover();
+    }
+
+    function extractFullText(pdf) {
+      let fullText = '';
+      const loadingTask = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        loadingTask.push(pdf.getPage(i).then(page => {
+          return page.getTextContent().then(content => {
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            const renderContext = {
+              canvasContext: context,
+              viewport: viewport
+            };
+            return page.render(renderContext).then(() => {
+              return performLayoutAnalysis(canvas).then(layoutData => {
+                return { content, viewport, pageIndex: i - 1, layoutData };
+              });
+            });
+          });
+        }));
+      }
+      Promise.all(loadingTask).then(pages => {
+        pages.forEach(({ content, viewport, pageIndex, layoutData }) => {
+          let pageText = layoutData.text;
+          const date = extractDate(pageText);
+          fileDates[pageIndex] = date || 'Unknown Date';
+          fullText += `[Date: ${fileDates[pageIndex]}] [Page ${pageIndex + 1}] ${pageText}\n\n`;
+          
+          const tableData = extractTableData(pageText);
+          if (tableData.length > 0) {
+            fileTables.push({ page: pageIndex + 1, data: tableData });
+          }
+        });
+        fileText = fullText;
+        addPageNumbers();
+      });
+    }
+
+    function extractCSVText(data) {
+      fileText = '';
+      fileDates = [];
+      data.forEach((row, index) => {
+        const rowText = row.join(' ');
+        const date = extractDate(rowText);
+        fileDates[index] = date || 'Unknown Date';
+        fileText += `[Date: ${fileDates[index]}] [Row ${index + 1}] ${rowText}\n\n`;
+      });
+      fileTables = [{ page: 1, data: data }];
+    }
+
+    function extractDate(text) {
+      const dateRegex = /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|\d{4}[-/]\d{1,2}[-/]\d{1,2}/i;
+      const match = text.match(dateRegex);
+      return match ? match[0] : null;
+    }
+
+    function addPageNumbers() {
+      const pageRegex = /\[Page \d+\]/g;
+      let pageNumber = 1;
+      fileText = fileText.replace(pageRegex, () => `[Page ${pageNumber++}]`);
+    }
+
+    function extractTableData(text) {
+      const lines = text.split('\n');
+      const table = [];
+      let inTable = false;
+      let columnCount = 0;
+
+      lines.forEach(line => {
+        const cells = line.split(/\s{2,}/);
+        if (cells.length > 1) {
+          if (!inTable) {
+            inTable = true;
+            columnCount = cells.length;
+          }
+          if (cells.length === columnCount) {
+            table.push(cells);
+          }
+        } else {
+          inTable = false;
+        }
+      });
+
+      return table.length > 1 ? table : [];
+    }
+
+    function performLayoutAnalysis(canvas) {
+      return new Promise((resolve) => {
+        const worker = Tesseract.createWorker({
+          logger: m => console.log(m)
+        });
+
+        (async () => {
+          await worker.load();
+          await worker.loadLanguage('eng');
+          await worker.initialize('eng');
+          await worker.setParameters({
+            tessedit_pageseg_mode: Tesseract.PSM.AUTO_OSD,
+          });
+          const { data } = await worker.recognize(canvas);
+          await worker.terminate();
+          resolve(data);
+        })();
+      });
+    }
+
+    function extractWords() {
+      if (!fileText) {
+        alert('Please upload and process a file first.');
+        return;
+      }
+      const searchTerm = document.getElementById('search-term').value;
+      const contextSentences = parseInt(document.getElementById('context-sentences').value);
+      const sentences = fileText.split(/[.!?]+/);
+      const matchingSentences = [];
+
+      sentences.forEach((sentence, index) => {
+        if (sentence.toLowerCase().includes(searchTerm.toLowerCase())) {
+          const start = Math.max(0, index - contextSentences);
+          const end = Math.min(sentences.length, index + contextSentences + 1);
+          const context = sentences.slice(start, end).join('. ');
+          const { page, date } = getPageAndDate(index);
+          matchingSentences.push({ sentence: context, page, date });
+        }
+      });
+
+      displayExtractedItems(matchingSentences, 'extracted-words', searchTerm);
+    }
+
+    function getPageAndDate(sentenceIndex) {
+      const pageMarkers = fileText.split(/\[Date: .*?\] \[(Page|Row) \d+\]/);
+      let count = 0;
+      for (let i = 0; i < pageMarkers.length; i++) {
+        count += pageMarkers[i].split(/[.!?]+/).length;
+        if (count > sentenceIndex) {
+          return { page: i + 1, date: fileDates[i] };
+        }
+      }
+      return { page: pageMarkers.length, date: fileDates[fileDates.length - 1] };
+    }
+
+    function displayExtractedItems(items, containerId, highlightTerm) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      items.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'extracted-item';
+        const highlightedSentence = item.sentence.replace(new RegExp(highlightTerm, 'gi'), match => `<span class="highlight">${match}</span>`);
+        div.innerHTML = `<strong>${index + 1}.) Date: ${item.date}, ${isCSV ? 'Row' : 'Page'} ${item.page}:</strong> ${highlightedSentence}`;
+        
+        div.innerHTML = div.innerHTML.replace(
+          /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig,
+          '<a href="$1" target="_blank">$1</a>'
+        );
+        
+        container.appendChild(div);
+      });
+      const wordCount = items.reduce((count, item) => count + (item.sentence.match(new RegExp(highlightTerm, 'gi')) || []).length, 0);
+      const countDiv = document.createElement('div');
+      countDiv.className = 'word-count';
+      countDiv.textContent = `Total occurrences: ${wordCount}`;
+      container.appendChild(countDiv);
+      handleLinkHover();
+    }
+
+    function highlightTerms() {
+      const term = document.getElementById('highlight-term').value;
+      if (!term || !fileText) {
+        alert('Please enter a term to highlight and ensure a file is processed.');
+        return;
+      }
+      const sentences = fileText.split(/[.!?]+/);
+      const matchingSentences = sentences.filter(sentence => sentence.toLowerCase().includes(term.toLowerCase()));
+      const processedSentences = matchingSentences.map(sentence => {
+        const { page, date } = getPageAndDate(sentences.indexOf(sentence));
+        return { sentence, page, date };
+      });
+      displayExtractedItems(processedSentences, 'highlight-list', term);
+    }
+
+    function searchTable() {
+      const searchTerm = document.getElementById('table-search-term').value.toLowerCase();
+      const resultDiv = document.getElementById('table-result');
+      resultDiv.innerHTML = '';
+
+      if (!searchTerm) {
+        resultDiv.textContent = 'Please enter a search term.';
+        return;
+      }
+
+      if (fileTables.length === 0) {
+        resultDiv.textContent = 'No table data found in the file.';
+        return;
+      }
+
+      const results = [];
+      fileTables.forEach((table, tableIndex) => {
+        table.data.forEach((row, rowIndex) => {
+          const rowText = row.join(' ').toLowerCase();
+          if (rowText.includes(searchTerm)) {
+            results.push({
+              table: tableIndex + 1,
+              row: rowIndex + 1,
+              content: row.join(' ')
+            });
+          }
+        });
+      });
+
+      if (results.length === 0) {
+        resultDiv.textContent = 'No matches found.';
+      } else {
+        const resultList = document.createElement('ul');
+        results.forEach((result, index) => {
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `<strong>${index + 1}. Table ${result.table}, Row ${result.row}:</strong> ${result.content}`;
+          resultList.appendChild(listItem);
+        });
+        resultDiv.appendChild(resultList);
+      }
+    }
+
+    function toggleGrid() {
+      const gridToggle = document.getElementById('grid-toggle');
+      const pdfViewer = document.getElementById('pdf-viewer');
+      
+      if (gridToggle.checked) {
+        pdfViewer.style.backgroundImage = 'linear-gradient(to right, #f0f0f0 1px, transparent 1px), linear-gradient(to bottom, #f0f0f0 1px, transparent 1px)';
+        pdfViewer.style.backgroundSize = '20px 20px';
+      } else {
+        pdfViewer.style.backgroundImage = 'none';
+      }
+    }
+
+    function exportFile() {
+      alert(`Exporting annotated ${isCSV ? 'CSV' : 'PDF'}... (This is a placeholder for the actual export functionality)`);
+    }
+
+    function generateReport() {
+      alert('Generating analysis report... (This is a placeholder for the actual report generation)');
+    }
+
+    function handleLinkHover() {
+      const links = document.querySelectorAll('a');
+      links.forEach(link => {
+        link.addEventListener('mouseover', (e) => {
+          const popup = document.createElement('div');
+          popup.className = 'link-popup';
+          popup.textContent = link.href;
+          document.body.appendChild(popup);
+          
+          const rect = link.getBoundingClientRect();
+          popup.style.left = `${rect.left}px`;
+          popup.style.top = `${rect.bottom + 5}px`;
+        });
+        
+        link.addEventListener('mouseout', () => {
+          const popup = document.querySelector('.link-popup');
+          if (popup) {
+            popup.remove();
+          }
+        });
+      });
+    }
+  </script>
+</body></html>
