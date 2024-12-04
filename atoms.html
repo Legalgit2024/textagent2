@@ -1,0 +1,77 @@
+import React, { useState } from 'react';
+import { Trash2, Plus } from 'lucide-react';
+
+const ProjectGrid = () => {
+  const [files, setFiles] = useState([
+    { id: 1, name: 'Doc1', type: 'doc' },
+    { id: 2, name: 'Image1', type: 'image' }
+  ]);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFiles([...files, {
+        id: Date.now(),
+        name: file.name,
+        type: file.type.split('/')[0],
+        preview: event.target.result
+      }]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="bg-blue-800 rounded-lg p-6 w-full max-w-2xl">
+      <div className="text-white text-lg font-medium mb-4">Project Alpha</div>
+      
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {files.map(file => (
+          <div key={file.id} className="bg-gray-200 aspect-square rounded-lg relative hover:bg-gray-300">
+            {file.preview ? (
+              <img 
+                src={file.preview} 
+                alt={file.name}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                {file.type === 'doc' ? 'Doc' : 'New'}
+              </div>
+            )}
+            <input
+              type="file"
+              onChange={handleFileUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+        ))}
+
+        {/* Empty slots */}
+        {[...Array(3)].map((_, i) => (
+          <div key={`empty-${i}`} className="bg-gray-200 aspect-square rounded-lg flex items-center justify-center text-gray-500">
+            New
+            <input
+              type="file"
+              onChange={handleFileUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between">
+        <button className="text-white hover:bg-blue-700 p-2 rounded">
+          <Plus size={20} />
+        </button>
+        <button className="text-white hover:bg-blue-700 p-2 rounded">
+          <Trash2 size={20} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectGrid;
